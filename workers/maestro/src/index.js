@@ -16,9 +16,14 @@ export default {
     const url = new URL(request.url);
 
     try {
-      // Interacciones de Discord
+      // Interacciones de Discord: se verifica la firma Ed25519 aqui,
+      // en el unico worker expuesto a internet, antes de delegar.
       if (url.pathname === '/discord/interactions') {
-        return await routeToDiscordBot(request, env);
+        const verified = await verifyDiscordRequest(request, env);
+        if (!verified.ok) {
+          return new Response('Firma invalida', { status: 401 });
+        }
+        return await routeToDiscordBot(verified.request, env);
       }
 
       // Webhooks / endpoints de PayPal
@@ -43,6 +48,69 @@ export default {
     }
   },
 };
+
+/**
+ * Verifica la firma Ed25519 de una peticion entrante de Discord usando
+ * las cabeceras X-Signature-Ed25519 y X-Signature-Timestamp, tal como
+ * exige la documentacion oficial de Discord Interactions.
+ *
+ * Usa Web Crypto (crypto.subtle), nativo en Cloudflare Workers,
+ * sin dependencias externas.
+ *
+ * Devuelve { ok: boolean, request: Request } donde `request` es un
+ * clon con el body ya leido, listo para reenviar al sub-worker.
+ */
+async function verifyDiscordRequest(request, env) {
+  const signature = request.headers.get('X-Signature-Ed25519');
+  const timestamp = request.headers.get('X-Signature-Timestamp');
+  const body = await request.text();
+
+  if (!signature || !timestamp || !env.DISCORD_PUBLIC_KEY) {
+    return { ok: false, request: null };
+  }
+
+  try {
+    const publicKey = await crypto.subtle.importKey(
+      'raw',
+      hexToBytes(env.DISCORD_PUBLIC_KEY),
+      { name: 'Ed25519', namedCurve: 'Ed25519' },
+      false,
+      ['verify']
+    );
+
+    const isValid = await crypto.subtle.verify(
+      { name: 'Ed25519' },
+      publicKey,
+      hexToBytes(signature),
+      new TextEncoder().encode(timestamp + body)
+    );
+
+    if (!isValid) {
+      return { ok: false, request: null };
+    }
+
+    // Reconstruimos la request con el body ya consumido para
+    // poder reenviarla intacta al sub-worker discord-bot.
+    const forwarded = new Request(request.url, {
+      method: request.method,
+      headers: request.headers,
+      body,
+    });
+
+    return { ok: true, request: forwarded };
+  } catch (err) {
+    console.error('Error verificando firma de Discord:', err);
+    return { ok: false, request: null };
+  }
+}
+
+function hexToBytes(hex) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+  }
+  return bytes;
+}
 
 /**
  * Delega la peticion al sub-worker discord-bot usando Service Binding.
