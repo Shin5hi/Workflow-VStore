@@ -89,3 +89,34 @@ La rama se publicó y se abrió un pull request para revisión. El pull request 
 ## Estado final
 
 El workflow de CI ya no depende de rutas glob predefinidas para localizar `package.json`, por lo que el job `Node checks` puede procesar de forma segura los manifests que realmente existan en el checkout.
+
+## Conversación y documentación posterior
+
+Después de corregir el workflow, se solicitó documentar todo lo tratado en el hilo. Este archivo se creó para conservar en el repositorio:
+
+- El contexto del pull request original.
+- El diagnóstico del fallo de CI.
+- Las decisiones de implementación.
+- La solución aplicada.
+- Las comprobaciones realizadas.
+- La entrega de la corrección.
+
+La documentación se añadió mediante el commit:
+
+```text
+docs: document CI Node checks fix
+```
+
+Posteriormente se publicó la rama actualizada y se abrió un segundo pull request para incorporar este archivo. En el momento de esta actualización, ese pull request permanece abierto y apunta a la rama base de trabajo configurada para la sesión.
+
+## Cronología resumida
+
+1. Se revisó la actualización de `actions/checkout` de v6 a v7.
+2. Se identificó el fallo `ENOENT` en el job `Node checks`.
+3. Se decidió corregir la detección de manifests y conservar los archivos Node raíz.
+4. Se actualizó el workflow para usar `find` y excluir `node_modules`.
+5. Se ejecutaron las validaciones locales: instalación, lint, pruebas, JSON, Bash y whitespace.
+6. Se creó y publicó el pull request de la corrección de CI.
+7. La corrección de CI fue mergeada.
+8. Se creó este documento con el historial técnico y las decisiones.
+9. Se creó y publicó un segundo pull request para añadir la documentación.
