@@ -45,7 +45,7 @@
 ## Arquitectura Master Worker
 - [x] Worker Maestro creado (workers/maestro)
 - [x] Sub-worker discord-bot creado
-- [ ] Sub-worker paypal-payments creado
+- [x] Sub-worker paypal-payments creado
 - [ ] Service Bindings configurados en wrangler.toml
 - [ ] Despliegue de prueba en Cloudflare
 
