@@ -11,39 +11,77 @@ const products = [
     <meta charset="utf-8" />
     <title>VStore</title>
     <meta name="viewport" content="width=device-width" />
+    <meta name="vstore-api-base" content={import.meta.env.PUBLIC_API_BASE_URL || ''} />
+    <style>
+      :global(:focus-visible) {
+        outline: 3px solid #2563eb;
+        outline-offset: 2px;
+      }
+
+      .skip-link {
+        position: absolute;
+        left: 0.5rem;
+        top: -3rem;
+        z-index: 10;
+        padding: 0.5rem 0.75rem;
+        background: #ffffff;
+        color: #111827;
+      }
+
+      .skip-link:focus {
+        top: 0.5rem;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      button:hover:not(:disabled) {
+        filter: brightness(0.9);
+      }
+    </style>
   </head>
   <body>
-    <h1>Catalogo de productos</h1>
-    <ul id="product-list">
-      {products.map((product) => (
-        <li>
-          {product.name} - {product.price.toFixed(2)} EUR
-          <button
-            data-id={product.id}
-            data-name={product.name}
-            data-price={product.price}
-            class="add-to-cart"
-          >
-            Anadir al carrito
-          </button>
-        </li>
-      ))}
-    </ul>
+    <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+    <main id="main-content">
+      <h1>Catalogo de productos</h1>
+      <ul id="product-list">
+        {products.map((product) => (
+          <li>
+            {product.name} - <span class="product-price">{new Intl.NumberFormat('es-ES', {
+              style: 'currency',
+              currency: 'EUR',
+            }).format(product.price)}</span>
+            <button
+              data-id={product.id}
+              data-name={product.name}
+              data-price={product.price}
+              class="add-to-cart"
+              type="button"
+            >
+              Anadir al carrito
+            </button>
+          </li>
+        ))}
+      </ul>
 
-    <section aria-labelledby="cart-title">
-      <h2 id="cart-title">Carrito</h2>
-      <p id="cart-empty">El carrito esta vacio.</p>
-      <ul id="cart-items"></ul>
-      <p><strong>Total: <span id="cart-total">0.00</span> EUR</strong></p>
-      <button id="checkout" type="button" disabled>Continuar con PayPal</button>
-      <p id="checkout-status" role="status" aria-live="polite"></p>
-    </section>
+      <section aria-labelledby="cart-title">
+        <h2 id="cart-title">Carrito</h2>
+        <p id="cart-empty">El carrito esta vacio.</p>
+        <ul id="cart-items"></ul>
+        <p><strong>Total: <span id="cart-total">0,00&nbsp;EUR</span></strong></p>
+        <button id="checkout" type="button" disabled>Continuar con PayPal</button>
+        <p id="checkout-status" role="status" aria-live="polite"></p>
+      </section>
+    </main>
 
     <script>
       type CartItem = { id: number; quantity: number };
       type PayPalLink = { rel: string; href: string };
 
       const cartStorageKey = 'vstore-cart';
+      const apiBase =
+        document.querySelector<HTMLMetaElement>('meta[name="vstore-api-base"]')?.content || '';
       const addToCartButtons = [
         ...document.querySelectorAll<HTMLButtonElement>('.add-to-cart'),
       ];
@@ -98,7 +136,10 @@ const products = [
           const product = catalog.get(item.id);
           if (!product) return;
           const row = document.createElement('li');
-          row.textContent = `${product.name} - ${product.price.toFixed(2)} EUR x `;
+          row.textContent = `${product.name} - ${new Intl.NumberFormat('es-ES', {
+            style: 'currency',
+            currency: 'EUR',
+          }).format(product.price)} x `;
 
           const quantity = document.createElement('input');
           quantity.type = 'number';
@@ -146,7 +187,7 @@ const products = [
         checkoutStatus.textContent = 'Preparando el pago...';
 
         try {
-          const response = await fetch('/paypal/create-order', {
+          const response = await fetch(new URL('/paypal/create-order', apiBase || window.location.origin), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -182,7 +223,7 @@ const products = [
         if (params.get('paypal') !== 'success' || !params.get('token')) return;
 
         checkoutStatus.textContent = 'Confirmando el pago...';
-        const response = await fetch('/paypal/capture-order', {
+        const response = await fetch(new URL('/paypal/capture-order', apiBase || window.location.origin), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId: params.get('token') }),

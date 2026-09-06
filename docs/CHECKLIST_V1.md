@@ -21,7 +21,8 @@
 - [x] Página de inicio con productos
 - [x] Carrito básico (localStorage)
 - [x] Flujo web preparado para crear y capturar órdenes PayPal en sandbox
-- [ ] Deploy en Cloudflare Pages
+- [ ] Configurar `PUBLIC_API_BASE_URL` con la URL pública del Worker Maestro
+- [ ] Deploy en Cloudflare Pages (build: `npm run build`, directorio: `dist`)
 
 ## PayPal
 - [ ] App creada en PayPal Developer
@@ -41,6 +42,14 @@
 - [ ] wrangler login ejecutado
 - [ ] Deploy final comprobado en producción
 - [ ] Flujo completo probado: catálogo -> carrito -> pago -> comandos de Discord
+
+### Flujo recomendado de despliegue
+
+1. Crear un proyecto Pages conectado al repositorio y usar `web` como directorio raíz.
+2. Configurar el comando `npm run build` y el directorio de salida `dist`.
+3. Definir `PUBLIC_API_BASE_URL` en las variables de entorno de Pages con la URL del Worker Maestro.
+4. Desplegar los Workers desde sus carpetas con Wrangler y guardar las credenciales mediante `wrangler secret put`.
+5. Configurar los Service Bindings del Worker Maestro y probar primero PayPal Sandbox.
 
 
 ## Arquitectura Master Worker
