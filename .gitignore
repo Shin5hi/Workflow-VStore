@@ -1,0 +1,26 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno
+.env
+.env.local
+.dev.vars
+
+# Cloudflare Workers / Wrangler
+.wrangler/
+
+# Build de Astro
+web/dist/
+web/.astro/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
