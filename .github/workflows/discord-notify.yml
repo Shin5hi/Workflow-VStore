@@ -1,0 +1,23 @@
+name: Notify Discord (native GitHub format)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, closed, reopened, ready_for_review]
+  issues:
+    types: [opened, closed, reopened]
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Forward GitHub event to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -sf -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data @${{ github.event_path }}
