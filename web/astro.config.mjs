@@ -5,5 +5,9 @@ import cloudflare from '@astrojs/cloudflare';
 // Ver docs/DECISIONES.md para el contexto de esta eleccion.
 export default defineConfig({
   output: 'server',
-  adapter: cloudflare(),
+  adapter: cloudflare({
+    platformProxy: {
+      enabled: true,
+    },
+  }),
 });

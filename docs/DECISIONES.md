@@ -11,6 +11,12 @@ Se elige Cloudflare (Pages + Workers) frente a otras alternativas porque:
 - No requiere mantener un servidor propio
 - Se integra bien con Astro mediante adaptador oficial
 - Baja latencia y buena escalabilidad
+- Permite mantener el frontend SSR y los endpoints serverless de PayPal en la misma plataforma.
+
+### Alternativa Vercel
+Vercel también es compatible con Astro SSR mediante `@astrojs/vercel` y ofrece una experiencia excelente de previews desde GitHub. No se adopta como opción principal en V1 porque obligaría a separar la ejecución del frontend de los Workers ya definidos para Discord y pagos, añadiendo otra plataforma sin una necesidad funcional.
+
+La migración a Vercel queda abierta si el proyecto pasa a priorizar previews, analytics o servicios específicos de Vercel. En ese caso habría que sustituir el adaptador, revisar los endpoints SSR y conservar los Workers de backend o migrarlos por separado.
 
 ## Astro como framework web
 Astro permite construir la web de catálogo de forma sencilla, con buen rendimiento y despliegue directo en Cloudflare Pages.

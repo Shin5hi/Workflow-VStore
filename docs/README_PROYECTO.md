@@ -28,10 +28,14 @@ Discord (comunidad + bot) <--> Cloudflare Workers (lógica bot) <--> Web Astro (
 
 ## Estado actual
 
-- Fase 1-2: Web Astro + catálogo + carrito — en progreso
-- Fase 3: Integración PayPal — pendiente
+- Fase 1-2: Web Astro + catálogo + carrito — base funcional
+- Fase 3: Integración PayPal — preparada para Sandbox; requiere secretos y despliegue
 - Fase 4: Bot de Discord en Workers — pendiente
 - Fase 5: Despliegue en producción — pendiente
+
+## Hosting elegido
+
+La opción principal es Cloudflare Pages para Astro SSR junto con Cloudflare Workers para el Worker Maestro y sus sub-workers. El frontend acepta `PUBLIC_API_BASE_URL` para apuntar al Worker Maestro; si queda vacío, usa el mismo origen. Vercel es una alternativa viable para Astro SSR, pero no es la opción principal porque separaría el frontend de los Workers de Discord y pagos ya definidos.
 
 Consulta `docs/CHECKLIST_V1.md` para el detalle tarea a tarea.
 
