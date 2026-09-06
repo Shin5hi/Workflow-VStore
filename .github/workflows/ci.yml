@@ -48,8 +48,16 @@ jobs:
         id: node-projects
         shell: bash
         run: |
-          shopt -s globstar nullglob
-          package_files=(package.json */package.json */*/package.json)
+          mapfile -t package_files < <(
+            find . \
+              -type f \
+              -name package.json \
+              -not -path './node_modules/*' \
+              -not -path '*/node_modules/*' \
+              -print |
+              sed 's#^\./##' |
+              sort
+          )
 
           if [ ${#package_files[@]} -eq 0 ]; then
             echo "found=false" >> "$GITHUB_OUTPUT"
