@@ -2,6 +2,11 @@ name = "vstore-maestro"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
 
+# Clave publica de la app de Discord, usada para verificar la firma Ed25519
+# de cada interaccion antes de delegarla al sub-worker discord-bot.
+[vars]
+DISCORD_PUBLIC_KEY = "REEMPLAZAR_CON_PUBLIC_KEY_DE_DISCORD"
+
 # Service Bindings hacia los sub-workers.
 # Deben apuntar al nombre del worker desplegado.
 [[services]]
