@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-health:
+    name: Repository health
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Verify required files
+        shell: bash
+        run: |
+          test -f README.md
+          test -f .github/dependabot.yml
+          test -f .github/workflows/ci.yml
+
+      - name: Check for whitespace errors
+        shell: bash
+        run: git diff --check
+
+  node-checks:
+    name: Node checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Detect Node projects
+        id: node-projects
+        shell: bash
+        run: |
+          shopt -s globstar nullglob
+          package_files=(package.json */package.json */*/package.json)
+
+          if [ ${#package_files[@]} -eq 0 ]; then
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No package.json files found yet. Skipping Node checks."
+            exit 0
+          fi
+
+          printf "%s\n" "${package_files[@]}" > package-json-files.txt
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "Found package manifests:"
+          cat package-json-files.txt
+
+      - name: Setup Node.js
+        if: steps.node-projects.outputs.found == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Validate package manifests
+        if: steps.node-projects.outputs.found == 'true'
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+
+          const files = fs
+            .readFileSync("package-json-files.txt", "utf8")
+            .trim()
+            .split(/\r?\n/)
+            .filter(Boolean);
+
+          for (const file of files) {
+            JSON.parse(fs.readFileSync(file, "utf8"));
+            console.log(`Valid JSON: ${file}`);
+          }
+          NODE
+
+      - name: Install, test, and build Node projects
+        if: steps.node-projects.outputs.found == 'true'
+        shell: bash
+        run: |
+          while IFS= read -r package_file; do
+            project_dir="$(dirname "$package_file")"
+            echo "::group::${project_dir}"
+            pushd "$project_dir" >/dev/null
+
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
+
+            npm run lint --if-present
+            npm test --if-present
+            npm run build --if-present
+
+            popd >/dev/null
+            echo "::endgroup::"
+          done < package-json-files.txt
