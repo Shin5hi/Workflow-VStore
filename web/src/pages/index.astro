@@ -1,6 +1,5 @@
 ---
-// Pagina de inicio del catalogo.
-// Datos de ejemplo, pendiente de conectar con un origen real (KV, D1, API).
+// Catalogo minimo de V1. La fuente real (KV, D1 o API) queda para una fase posterior.
 const products = [
   { id: 1, name: 'Producto de ejemplo 1', price: 9.99 },
   { id: 2, name: 'Producto de ejemplo 2', price: 14.99 },
@@ -11,28 +10,197 @@ const products = [
   <head>
     <meta charset="utf-8" />
     <title>VStore</title>
+    <meta name="viewport" content="width=device-width" />
   </head>
   <body>
     <h1>Catalogo de productos</h1>
-    <ul>
+    <ul id="product-list">
       {products.map((product) => (
         <li>
           {product.name} - {product.price.toFixed(2)} EUR
-          <button data-id={product.id} class="add-to-cart">Anadir al carrito</button>
+          <button
+            data-id={product.id}
+            data-name={product.name}
+            data-price={product.price}
+            class="add-to-cart"
+          >
+            Anadir al carrito
+          </button>
         </li>
       ))}
     </ul>
 
+    <section aria-labelledby="cart-title">
+      <h2 id="cart-title">Carrito</h2>
+      <p id="cart-empty">El carrito esta vacio.</p>
+      <ul id="cart-items"></ul>
+      <p><strong>Total: <span id="cart-total">0.00</span> EUR</strong></p>
+      <button id="checkout" type="button" disabled>Continuar con PayPal</button>
+      <p id="checkout-status" role="status" aria-live="polite"></p>
+    </section>
+
     <script>
-      // Carrito basico usando localStorage.
-      document.querySelectorAll('.add-to-cart').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const id = btn.getAttribute('data-id');
-          const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-          cart.push(id);
-          localStorage.setItem('cart', JSON.stringify(cart));
-          alert('Producto anadido al carrito');
+      type CartItem = { id: number; quantity: number };
+      type PayPalLink = { rel: string; href: string };
+
+      const cartStorageKey = 'vstore-cart';
+      const addToCartButtons = [
+        ...document.querySelectorAll<HTMLButtonElement>('.add-to-cart'),
+      ];
+      const catalog = new Map(
+        addToCartButtons.map((button) => [
+          Number(button.dataset.id),
+          {
+            id: Number(button.dataset.id),
+            name: button.dataset.name,
+            price: Number(button.dataset.price),
+          },
+        ]),
+      );
+      const cartItems = document.querySelector<HTMLUListElement>('#cart-items')!;
+      const cartEmpty = document.querySelector<HTMLParagraphElement>('#cart-empty')!;
+      const cartTotal = document.querySelector<HTMLSpanElement>('#cart-total')!;
+      const checkoutButton = document.querySelector<HTMLButtonElement>('#checkout')!;
+      const checkoutStatus = document.querySelector<HTMLParagraphElement>('#checkout-status')!;
+
+      let cart = loadCart();
+
+      function loadCart(): CartItem[] {
+        try {
+          const stored = JSON.parse(localStorage.getItem(cartStorageKey) || '[]');
+          return Array.isArray(stored)
+            ? stored
+                .filter((item) => catalog.has(item.id) && Number.isInteger(item.quantity))
+                .map((item) => ({ id: item.id, quantity: Math.max(1, item.quantity) }))
+            : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function saveCart() {
+        localStorage.setItem(cartStorageKey, JSON.stringify(cart));
+      }
+
+      function getTotal() {
+        return cart.reduce((total, item) => {
+          const product = catalog.get(item.id);
+          return total + (product?.price || 0) * item.quantity;
+        }, 0);
+      }
+
+      function renderCart() {
+        cartItems.replaceChildren();
+        cartEmpty.hidden = cart.length > 0;
+        checkoutButton.disabled = cart.length === 0;
+
+        cart.forEach((item) => {
+          const product = catalog.get(item.id);
+          if (!product) return;
+          const row = document.createElement('li');
+          row.textContent = `${product.name} - ${product.price.toFixed(2)} EUR x `;
+
+          const quantity = document.createElement('input');
+          quantity.type = 'number';
+          quantity.min = '1';
+          quantity.value = String(item.quantity);
+          quantity.setAttribute('aria-label', `Cantidad de ${product.name}`);
+          quantity.addEventListener('change', () => {
+            item.quantity = Math.max(1, Number.parseInt(quantity.value, 10) || 1);
+            saveCart();
+            renderCart();
+          });
+
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.textContent = 'Quitar';
+          remove.addEventListener('click', () => {
+            cart = cart.filter((cartItem) => cartItem.id !== item.id);
+            saveCart();
+            renderCart();
+          });
+
+          row.append(quantity, ' ', remove);
+          cartItems.append(row);
         });
+
+        cartTotal.textContent = getTotal().toFixed(2);
+      }
+
+      addToCartButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const id = Number(button.dataset.id);
+          const existing = cart.find((item) => item.id === id);
+          if (existing) {
+            existing.quantity += 1;
+          } else {
+            cart.push({ id, quantity: 1 });
+          }
+          saveCart();
+          renderCart();
+        });
+      });
+
+      checkoutButton.addEventListener('click', async () => {
+        checkoutButton.disabled = true;
+        checkoutStatus.textContent = 'Preparando el pago...';
+
+        try {
+          const response = await fetch('/paypal/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              amount: getTotal().toFixed(2),
+              currency: 'EUR',
+              returnUrl: `${window.location.origin}${window.location.pathname}?paypal=success`,
+              cancelUrl: `${window.location.origin}${window.location.pathname}?paypal=cancelled`,
+            }),
+          });
+          const order: { links?: PayPalLink[]; error?: string } = await response.json();
+          if (!response.ok) {
+            throw new Error(order.error || 'No se pudo crear la orden de PayPal.');
+          }
+
+          const approvalLink = order.links?.find((link) => link.rel === 'approve')?.href;
+          if (!approvalLink) {
+            throw new Error('PayPal no devolvio un enlace de aprobacion.');
+          }
+          window.location.assign(approvalLink);
+        } catch (error) {
+          checkoutStatus.textContent =
+            error instanceof Error ? error.message : 'No se pudo iniciar el pago.';
+          checkoutButton.disabled = false;
+        }
+      });
+
+      async function captureApprovedOrder() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('paypal') === 'cancelled') {
+          checkoutStatus.textContent = 'El pago fue cancelado.';
+          return;
+        }
+        if (params.get('paypal') !== 'success' || !params.get('token')) return;
+
+        checkoutStatus.textContent = 'Confirmando el pago...';
+        const response = await fetch('/paypal/capture-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: params.get('token') }),
+        });
+        const result: { error?: string } = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'No se pudo confirmar el pago.');
+        }
+        cart = [];
+        saveCart();
+        renderCart();
+        checkoutStatus.textContent = 'Pago completado correctamente.';
+      }
+
+      renderCart();
+      captureApprovedOrder().catch((error) => {
+        checkoutStatus.textContent =
+          error instanceof Error ? error.message : 'No se pudo confirmar el pago.';
       });
     </script>
   </body>

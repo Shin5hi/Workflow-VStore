@@ -19,15 +19,16 @@
 - [x] Proyecto Astro creado (carpeta o repo)
 - [x] Astro configurado con adaptador de Cloudflare
 - [x] Página de inicio con productos
-- [ ] Carrito básico (localStorage)
+- [x] Carrito básico (localStorage)
+- [x] Flujo web preparado para crear y capturar órdenes PayPal en sandbox
 - [ ] Deploy en Cloudflare Pages
 
 ## PayPal
 - [ ] App creada en PayPal Developer
 - [ ] CLIENT_ID y SECRET obtenidos
-- [ ] Endpoint /create-order funcionando
-- [ ] Endpoint /capture-order funcionando
-- [ ] Botones de PayPal integrados en la web
+- [ ] Endpoint /create-order probado con credenciales sandbox
+- [ ] Endpoint /capture-order probado con una orden sandbox
+- [x] Botón de checkout PayPal integrado en la web
 
 ## Bot de Discord (Cloudflare Workers)
 - [x] Worker creado para el bot
