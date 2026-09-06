@@ -1,0 +1,39 @@
+---
+// Pagina de inicio del catalogo.
+// Datos de ejemplo, pendiente de conectar con un origen real (KV, D1, API).
+const products = [
+  { id: 1, name: 'Producto de ejemplo 1', price: 9.99 },
+  { id: 2, name: 'Producto de ejemplo 2', price: 14.99 },
+];
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>VStore</title>
+  </head>
+  <body>
+    <h1>Catalogo de productos</h1>
+    <ul>
+      {products.map((product) => (
+        <li>
+          {product.name} - {product.price.toFixed(2)} EUR
+          <button data-id={product.id} class="add-to-cart">Anadir al carrito</button>
+        </li>
+      ))}
+    </ul>
+
+    <script>
+      // Carrito basico usando localStorage.
+      document.querySelectorAll('.add-to-cart').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+          cart.push(id);
+          localStorage.setItem('cart', JSON.stringify(cart));
+          alert('Producto anadido al carrito');
+        });
+      });
+    </script>
+  </body>
+</html>
