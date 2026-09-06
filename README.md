@@ -16,3 +16,11 @@ npm run discord:apply
 ```
 
 Para aplicar cambios reales en Discord hace falta configurar `DISCORD_BOT_TOKEN` y `DISCORD_GUILD_ID` como variables de entorno. El modo `discord:plan` no modifica el servidor.
+
+
+## Documentacion
+
+- [Documentacion general del proyecto](docs/README_PROYECTO.md)
+- [Checklist V1](docs/CHECKLIST_V1.md)
+- [Decisiones tecnicas](docs/DECISIONES.md)
+- [Setup del servidor de Discord](docs/discord-server-setup.md)
