@@ -1,19 +1,20 @@
 /**
  * Sub-worker: paypal-payments
  *
- * Responsable de gestionar el flujo de pagos con PayPal:
- * - POST /create-order  : crea una orden de pago en PayPal
- * - POST /capture-order : captura el pago tras la aprobacion del usuario
+ * Gestiona el flujo PayPal Sandbox:
+ * - POST /create-order: crea una orden y devuelve el enlace de aprobacion.
+ * - POST /capture-order: captura una orden aprobada.
  *
- * Recibe las peticiones del Worker Maestro via Service Binding.
- * No debe exponerse directamente a internet salvo para pruebas locales.
- *
- * Ver docs/ARQUITECTURA_MASTER_WORKER.md y docs/DECISIONES.md para el contexto.
+ * Recibe peticiones del Worker Maestro mediante Service Binding.
  */
 
 async function getAccessToken(env) {
+  if (!env.PAYPAL_CLIENT_ID || !env.PAYPAL_CLIENT_SECRET || !env.PAYPAL_API_BASE) {
+    throw new Error('Faltan variables de entorno de PayPal');
+  }
+
   const auth = btoa(`${env.PAYPAL_CLIENT_ID}:${env.PAYPAL_CLIENT_SECRET}`);
-  const res = await fetch(`${env.PAYPAL_API_BASE}/v1/oauth2/token`, {
+  const response = await fetch(`${env.PAYPAL_API_BASE}/v1/oauth2/token`, {
     method: 'POST',
     headers: {
       Authorization: `Basic ${auth}`,
@@ -22,11 +23,11 @@ async function getAccessToken(env) {
     body: 'grant_type=client_credentials',
   });
 
-  if (!res.ok) {
+  if (!response.ok) {
     throw new Error('No se pudo obtener el access token de PayPal');
   }
 
-  const data = await res.json();
+  const data = await response.json();
   return data.access_token;
 }
 
@@ -34,18 +35,30 @@ async function createOrder(request, env) {
   let body;
   try {
     body = await request.json();
-  } catch (err) {
-    return new Response('JSON invalido', { status: 400 });
+  } catch {
+    return jsonError('JSON invalido', 400);
   }
 
-  const { amount, currency } = body || {};
-  if (!amount || !currency) {
-    return new Response('Faltan campos amount/currency', { status: 400 });
+  const { amount, currency, returnUrl, cancelUrl } = body || {};
+  const numericAmount = Number(amount);
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0 || !currency) {
+    return jsonError('Faltan campos amount/currency', 400);
   }
 
   try {
     const accessToken = await getAccessToken(env);
-    const res = await fetch(`${env.PAYPAL_API_BASE}/v2/checkout/orders`, {
+    const purchaseUnit = {
+      amount: {
+        currency_code: String(currency).toUpperCase(),
+        value: numericAmount.toFixed(2),
+      },
+    };
+    const applicationContext =
+      returnUrl && cancelUrl
+        ? { application_context: { return_url: returnUrl, cancel_url: cancelUrl } }
+        : {};
+
+    const response = await fetch(`${env.PAYPAL_API_BASE}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -53,20 +66,15 @@ async function createOrder(request, env) {
       },
       body: JSON.stringify({
         intent: 'CAPTURE',
-        purchase_units: [
-          { amount: { currency_code: currency, value: amount } },
-        ],
+        purchase_units: [purchaseUnit],
+        ...applicationContext,
       }),
     });
 
-    const order = await res.json();
-    return new Response(JSON.stringify(order), {
-      status: res.status,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (err) {
-    console.error('Error creando orden PayPal:', err);
-    return new Response('Error creando orden', { status: 502 });
+    return jsonResponse(await response.json(), response.status);
+  } catch (error) {
+    console.error('Error creando orden PayPal:', error);
+    return jsonError('Error creando orden', 502);
   }
 }
 
@@ -74,41 +82,48 @@ async function captureOrder(request, env) {
   let body;
   try {
     body = await request.json();
-  } catch (err) {
-    return new Response('JSON invalido', { status: 400 });
+  } catch {
+    return jsonError('JSON invalido', 400);
   }
 
   const { orderId } = body || {};
-  if (!orderId) {
-    return new Response('Falta el campo orderId', { status: 400 });
+  if (!orderId || !/^[A-Z0-9-]+$/i.test(orderId)) {
+    return jsonError('Falta el campo orderId', 400);
   }
 
   try {
     const accessToken = await getAccessToken(env);
-    const res = await fetch(
-      `${env.PAYPAL_API_BASE}/v2/checkout/orders/${orderId}/capture`,
+    const response = await fetch(
+      `${env.PAYPAL_API_BASE}/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`,
       {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-      }
+      },
     );
 
-    const capture = await res.json();
-    return new Response(JSON.stringify(capture), {
-      status: res.status,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (err) {
-    console.error('Error capturando orden PayPal:', err);
-    return new Response('Error capturando orden', { status: 502 });
+    return jsonResponse(await response.json(), response.status);
+  } catch (error) {
+    console.error('Error capturando orden PayPal:', error);
+    return jsonError('Error capturando orden', 502);
   }
 }
 
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+function jsonError(error, status) {
+  return jsonResponse({ error }, status);
+}
+
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     const url = new URL(request.url);
 
     if (request.method !== 'POST') {
@@ -116,11 +131,11 @@ export default {
     }
 
     if (url.pathname === '/create-order') {
-      return await createOrder(request, env);
+      return createOrder(request, env);
     }
 
     if (url.pathname === '/capture-order') {
-      return await captureOrder(request, env);
+      return captureOrder(request, env);
     }
 
     return new Response('Ruta no encontrada', { status: 404 });

@@ -131,7 +131,9 @@ async function routeToPaypal(request, env) {
   if (!env.PAYPAL_PAYMENTS) {
     return new Response('PAYPAL_PAYMENTS binding no configurado', { status: 500 });
   }
-  return env.PAYPAL_PAYMENTS.fetch(request);
+  const url = new URL(request.url);
+  url.pathname = url.pathname.replace(/^\/paypal/, '') || '/';
+  return env.PAYPAL_PAYMENTS.fetch(new Request(url, request));
 }
 
 /**
