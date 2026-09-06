@@ -1,0 +1,16 @@
+{
+  "name": "workflow-vstore",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Workflow para tienda en Discord + Web con Astro.",
+  "scripts": {
+    "discord:plan": "node scripts/discord/provision-server.mjs --dry-run",
+    "discord:apply": "node scripts/discord/provision-server.mjs --apply",
+    "lint": "node --check scripts/discord/provision-server.mjs",
+    "test": "npm run discord:plan"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "roles": [
+    {
+      "name": "Admin",
+      "managedManually": true,
+      "notes": "Rol de maxima confianza. Crearlo o asignarlo manualmente desde Discord."
+    },
+    {
+      "name": "Staff",
+      "color": 3447003
+    },
+    {
+      "name": "Soporte",
+      "color": 5763719
+    },
+    {
+      "name": "Bot",
+      "color": 10181046
+    },
+    {
+      "name": "Cliente",
+      "color": 15844367
+    },
+    {
+      "name": "Miembro",
+      "color": 9807270
+    }
+  ],
+  "categories": [
+    {
+      "name": "Entrada",
+      "channels": [
+        {
+          "name": "reglas",
+          "type": "text",
+          "policy": "publicReadOnly"
+        },
+        {
+          "name": "anuncios",
+          "type": "text",
+          "policy": "publicAnnouncements"
+        },
+        {
+          "name": "bienvenida",
+          "type": "text",
+          "policy": "publicReadOnly"
+        }
+      ]
+    },
+    {
+      "name": "Tienda",
+      "channels": [
+        {
+          "name": "productos",
+          "type": "text",
+          "policy": "membersReadOnly"
+        },
+        {
+          "name": "stock",
+          "type": "text",
+          "policy": "membersReadOnly"
+        },
+        {
+          "name": "pedidos-info",
+          "type": "text",
+          "policy": "membersReadOnly"
+        },
+        {
+          "name": "ofertas",
+          "type": "text",
+          "policy": "membersReadOnly"
+        }
+      ]
+    },
+    {
+      "name": "Soporte",
+      "channels": [
+        {
+          "name": "ayuda",
+          "type": "text",
+          "policy": "memberSupport"
+        },
+        {
+          "name": "soporte-tickets",
+          "type": "text",
+          "policy": "membersReadOnly"
+        },
+        {
+          "name": "seguimiento-pedidos",
+          "type": "text",
+          "policy": "customerSupport"
+        },
+        {
+          "name": "soporte-voz",
+          "type": "voice",
+          "policy": "supportVoice"
+        }
+      ]
+    },
+    {
+      "name": "Comunidad",
+      "channels": [
+        {
+          "name": "general",
+          "type": "text",
+          "policy": "memberChat"
+        },
+        {
+          "name": "dudas",
+          "type": "text",
+          "policy": "memberChat"
+        },
+        {
+          "name": "sugerencias",
+          "type": "text",
+          "policy": "memberChat"
+        },
+        {
+          "name": "off-topic",
+          "type": "text",
+          "policy": "memberChat"
+        },
+        {
+          "name": "sala-general",
+          "type": "voice",
+          "policy": "memberVoice"
+        }
+      ]
+    },
+    {
+      "name": "Staff",
+      "channels": [
+        {
+          "name": "staff-chat",
+          "type": "text",
+          "policy": "staffOnly"
+        },
+        {
+          "name": "pedidos-admin",
+          "type": "text",
+          "policy": "staffOnly"
+        },
+        {
+          "name": "logs-bot",
+          "type": "text",
+          "policy": "staffAndBot"
+        },
+        {
+          "name": "moderacion",
+          "type": "text",
+          "policy": "staffOnly"
+        },
+        {
+          "name": "reunion-staff",
+          "type": "voice",
+          "policy": "staffVoice"
+        }
+      ]
+    }
+  ]
+}
