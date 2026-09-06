@@ -11,3 +11,12 @@ service = "vstore-discord-bot"
 [[services]]
 binding = "PAYPAL_PAYMENTS"
 service = "vstore-paypal-payments"
+
+
+[[services]]
+binding = "STRIPE_PAYMENTS"
+service = "vstore-stripe-payments"
+
+[[services]]
+binding = "REVOLUT_PAYMENTS"
+service = "vstore-revolut-payments"
