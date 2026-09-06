@@ -3,7 +3,7 @@
  *
  * Punto de entrada unico para:
  * - Interacciones de Discord (/productos, /stock, ...)
- * - Webhooks de PayPal (create-order, capture-order)
+ * - Webhooks/endpoints de pago: PayPal, Stripe y Revolut
  * - Peticiones desde la web Astro (opcional)
  *
  * Este worker valida las peticiones y las delega a los
@@ -24,6 +24,16 @@ export default {
       // Webhooks / endpoints de PayPal
       if (url.pathname.startsWith('/paypal/')) {
         return await routeToPaypal(request, env);
+      }
+
+      // Webhooks / endpoints de Stripe
+      if (url.pathname.startsWith('/stripe/')) {
+        return await routeToStripe(request, env);
+      }
+
+      // Webhooks / endpoints de Revolut
+      if (url.pathname.startsWith('/revolut/')) {
+        return await routeToRevolut(request, env);
       }
 
       return new Response('Workflow-VStore Master Worker', { status: 200 });
@@ -54,4 +64,26 @@ async function routeToPaypal(request, env) {
     return new Response('PAYPAL_PAYMENTS binding no configurado', { status: 500 });
   }
   return env.PAYPAL_PAYMENTS.fetch(request);
+}
+
+/**
+ * Delega la peticion al sub-worker stripe-payments usando Service Binding.
+ * Requiere configurar el binding STRIPE_PAYMENTS en wrangler.toml.
+ */
+async function routeToStripe(request, env) {
+  if (!env.STRIPE_PAYMENTS) {
+    return new Response('STRIPE_PAYMENTS binding no configurado', { status: 500 });
+  }
+  return env.STRIPE_PAYMENTS.fetch(request);
+}
+
+/**
+ * Delega la peticion al sub-worker revolut-payments usando Service Binding.
+ * Requiere configurar el binding REVOLUT_PAYMENTS en wrangler.toml.
+ */
+async function routeToRevolut(request, env) {
+  if (!env.REVOLUT_PAYMENTS) {
+    return new Response('REVOLUT_PAYMENTS binding no configurado', { status: 500 });
+  }
+  return env.REVOLUT_PAYMENTS.fetch(request);
 }
