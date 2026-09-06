@@ -24,3 +24,18 @@ Para aplicar cambios reales en Discord hace falta configurar `DISCORD_BOT_TOKEN`
 - [Checklist V1](docs/CHECKLIST_V1.md)
 - [Decisiones tecnicas](docs/DECISIONES.md)
 - [Setup del servidor de Discord](docs/discord-server-setup.md)
+- [Arquitectura Master Worker](docs/ARQUITECTURA_MASTER_WORKER.md)
+
+## Estructura del proyecto
+
+```
+docs/       -> Documentacion del proyecto (decisiones, checklist, arquitectura)
+web/        -> Sitio Astro (catalogo + carrito), desplegado en Cloudflare Pages
+workers/
+  maestro/       -> Worker Orquestador (punto de entrada publico)
+  discord-bot/   -> Sub-worker: comandos /productos /stock
+scripts/discord/ -> Scripts de aprovisionamiento del servidor de Discord
+```
+
+Nota: el proyecto VTuber (Shinshi) se desarrolla por separado y no forma parte de este workflow de tienda en la V1.
+
