@@ -1,0 +1,13 @@
+name = "vstore-maestro"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# Service Bindings hacia los sub-workers.
+# Deben apuntar al nombre del worker desplegado.
+[[services]]
+binding = "DISCORD_BOT"
+service = "vstore-discord-bot"
+
+[[services]]
+binding = "PAYPAL_PAYMENTS"
+service = "vstore-paypal-payments"
