@@ -3,13 +3,19 @@ node_modules/
 
 # Variables de entorno
 .env
+.env.*
+!.env.example
 .env.local
 .dev.vars
 
 # Cloudflare Workers / Wrangler
 .wrangler/
 
-# Build de Astro
+# Build outputs
+dist/
+build/
+.next/
+out/
 web/dist/
 web/.astro/
 
